@@ -1,0 +1,91 @@
+# R History and Session Data
+.Rhistory
+.RData
+.Rproj.user/
+.Ruserdata
+
+# R Project Files
+*.Rproj
+
+# R Temporary Files
+*-Ex.R
+*.log
+
+# R Output Files
+*.out
+
+# RStudio Files
+.Rproj.user
+.Rproj.user/
+
+# knitr and R markdown
+*.utf8.md
+*.knit.md
+.Rmd.swp
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# pkgdown site
+docs/
+
+# translation temp files
+po/*~
+
+# RStudio Connect folder
+rsconnect/
+
+# MacOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows System Files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux System Files
+*~
+.directory
+.Trash-*
+
+# Temporary Files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Large Data Files (if needed in future)
+# Uncomment lines below if you have large files to exclude
+# *.csv
+# *.rds
+# *.RData
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Python (if any Python scripts are added)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Output Directories (already tracked but listing for reference)
+# results/
+# Note: results/ folder IS tracked to preserve analysis outputs
