@@ -6,9 +6,9 @@
 #          axillary lymph node dissection: an effective approach to improving
 #          guideline concordant breast cancer care in Nigeria
 #
-# PI: Lekan Olasehinde
-# Journal: ecancermedicalscience
-# DOI: https://ecancer.org/en/journal/article/1609
+# Authors: Olasehinde O, Di Bernardo M, Komolafe AO, et al.
+# Journal: ecancermedicalscience (2023), Volume 17
+# DOI: 10.3332/ecancer.2023.1609
 #
 # Description:
 # This script analyzes lymph node retrieval rates from breast cancer surgeries
@@ -25,22 +25,25 @@
 #
 # Guideline concordance defined as: >= 10 lymph nodes harvested
 #
+# Output mapping to paper:
+#   Section 6  -> Table 1 (Patient demographics and clinical characteristics)
+#   Section 8  -> Table 2 / Figure 1 (Window 1 baseline concordance by firm)
+#   Section 9  -> Table 3 / Figure 2 (Window 2 intervention concordance by firm)
+#   Section 7  -> Regression analyses reported in Results text
+#
 ################################################################################
 
 # =============================================================================
 # 1. LOAD REQUIRED PACKAGES
 # =============================================================================
+# Note: tidyverse loads dplyr, tidyr, ggplot2, stringr, and other core packages.
+# plyr has been removed to avoid masking dplyr functions (plyr was not used).
+# ggBrackets has been replaced with local helper functions below (the package
+# is not available on CRAN and fails to install on R >= 4.5).
 
-library(officer)      # For working with Microsoft Office documents
-library(dplyr)        # Data manipulation
-library(tidyr)        # Data tidying
-library(tidyverse)    # Collection of data science packages
-library(stringr)      # String manipulation
-library(plyr)         # Tools for splitting, applying and combining data
-library(ggBrackets)   # Add brackets to ggplot2 plots
+library(tidyverse)    # Core data science packages (dplyr, tidyr, ggplot2, etc.)
 library(ggpubr)       # Publication ready plots
 library(scales)       # Scale functions for visualization
-library(lubridate)    # Date/time manipulation
 library(Hmisc)        # Harrell Miscellaneous (for labels)
 library(gridExtra)    # Arrange multiple grid-based plots
 library(grid)         # Low-level graphics
@@ -48,14 +51,91 @@ library(lattice)      # Trellis graphics
 library(cowplot)      # Streamlined plot theme and plot arrangements
 
 # =============================================================================
+# 1b. BRACKET ANNOTATION HELPERS (replaces ggBrackets package)
+# =============================================================================
+# These functions provide the same visual annotations as ggBrackets but use
+# only base ggplot2 annotate() calls, requiring no external dependencies.
+
+#' Add a bracket annotation between two groups on a ggplot
+#' @param data Data frame with summary statistics
+#' @param sample_col Column name identifying the groups
+#' @param sample1,sample2 Names of the two groups to connect
+#' @param mean_col Column name for the mean (used to set bracket height)
+#' @param extra_y_space Additional y-axis space above the max mean
+#' @return A list of ggplot2 annotate layers drawing the bracket
+gg_bracket_between <- function(data, sample_col, sample1, sample2,
+                                mean_col, extra_y_space = 0) {
+  y_pos <- max(data[[mean_col]], na.rm = TRUE) + extra_y_space
+  tick <- max(abs(extra_y_space) * 0.08, 0.02)
+  list(
+    annotate("segment", x = 1, xend = 2, y = y_pos, yend = y_pos, linewidth = 0.3),
+    annotate("segment", x = 1, xend = 1, y = y_pos - tick, yend = y_pos, linewidth = 0.3),
+    annotate("segment", x = 2, xend = 2, y = y_pos - tick, yend = y_pos, linewidth = 0.3)
+  )
+}
+
+#' Add t-test result text between two groups on a ggplot
+#' Performs a Welch t-test from summary statistics and annotates the p-value.
+#' @param data Data frame with summary statistics per group
+#' @param sample_col Column name identifying the groups
+#' @param sample1,sample2 Names of the two groups to compare
+#' @param mean_col,sd_col,n_col Column names for mean, SD, and sample size
+#' @param extra_y_space Additional y-axis space for label placement
+#' @param equal.variance If FALSE (default), use Welch approximation for df
+#' @param size Text size for the annotation
+#' @return A ggplot2 annotate text layer with the p-value
+gg_ttest_between <- function(data, sample_col, sample1, sample2,
+                              mean_col, sd_col, n_col,
+                              extra_y_space = 0, equal.variance = FALSE,
+                              size = 3) {
+  s1 <- data[data[[sample_col]] == sample1, ]
+  s2 <- data[data[[sample_col]] == sample2, ]
+  m1 <- s1[[mean_col]]; sd1 <- s1[[sd_col]]; n1 <- s1[[n_col]]
+  m2 <- s2[[mean_col]]; sd2 <- s2[[sd_col]]; n2 <- s2[[n_col]]
+
+  se <- sqrt(sd1^2 / n1 + sd2^2 / n2)
+  t_stat <- (m1 - m2) / se
+
+  if (equal.variance) {
+    df <- n1 + n2 - 2
+  } else {
+    df_num <- (sd1^2 / n1 + sd2^2 / n2)^2
+    df_den <- (sd1^2 / n1)^2 / (n1 - 1) + (sd2^2 / n2)^2 / (n2 - 1)
+    df <- df_num / df_den
+  }
+  p_val <- 2 * pt(-abs(t_stat), df)
+
+  if (p_val < 0.001) {
+    p_label <- "p<0.001"
+  } else {
+    p_label <- paste0("p=", format(round(p_val, 3), nsmall = 3))
+  }
+
+  y_pos <- max(data[[mean_col]], na.rm = TRUE) + extra_y_space
+  annotate("text", x = 1.5, y = y_pos, label = p_label, size = size)
+}
+
+#' Add a custom value label between two groups on a ggplot
+#' @param data Data frame with summary statistics per group
+#' @param value Text string to display (e.g. "p=1")
+#' @param sample_col Column name identifying the groups
+#' @param sample1,sample2 Names of the two groups
+#' @param mean_col Column name for the mean (used to set label height)
+#' @param extra_y_space Additional y-axis space for label placement
+#' @param size Text size for the annotation
+#' @return A ggplot2 annotate text layer
+gg_value_between <- function(data, value, sample_col, sample1, sample2,
+                              mean_col, extra_y_space = 0, size = 3) {
+  y_pos <- max(data[[mean_col]], na.rm = TRUE) + extra_y_space
+  annotate("text", x = 1.5, y = y_pos, label = value, size = size)
+}
+
+# =============================================================================
 # 2. SETUP AND DATA LOADING
 # =============================================================================
 
-# Set working directory (modify as needed)
-# setwd("~/Desktop/ARGO/Study work & exports/Lekan_Olasehinde/LymphResection/git_repo")
-
 # Clear existing data and graphics
-rm(list = ls())
+rm(list = ls()[!ls() %in% c("gg_bracket_between", "gg_ttest_between", "gg_value_between")])
 graphics.off()
 
 # Create output directories
@@ -330,7 +410,7 @@ if (nrow(duplicates) > 0) {
 mastectomy[mastectomy$pathology_no == "H. 1017/21", "date_window"] <- 2
 
 # =============================================================================
-# 6. DESCRIPTIVE STATISTICS
+# 6. DESCRIPTIVE STATISTICS  -->  Paper Table 1
 # =============================================================================
 
 cat("\n=== OVERALL DESCRIPTIVE STATISTICS ===\n")
@@ -367,7 +447,7 @@ cat("\nDistribution by histopathological diagnosis:\n")
 print(table(mastectomy$histopath_diagnosis, useNA = "ifany"))
 
 # =============================================================================
-# 7. OVERALL ANALYSIS (All Windows Combined)
+# 7. OVERALL ANALYSIS (All Windows Combined)  -->  Paper Results text
 # =============================================================================
 
 cat("\n=== OVERALL ANALYSIS (ALL WINDOWS) ===\n")
@@ -378,7 +458,7 @@ mastectomy.full <- mastectomy %>%
 revisions_analysis(mastectomy.full)
 
 # =============================================================================
-# 8. WINDOW 1 ANALYSIS (Retrospective Baseline - No Intervention)
+# 8. WINDOW 1 ANALYSIS (Retrospective Baseline)  -->  Paper Table 2 / Figure 1
 # =============================================================================
 
 cat("\n\n=== WINDOW 1 ANALYSIS (BASELINE - NO INTERVENTION) ===\n")
@@ -542,7 +622,7 @@ pdf("results/window_1/barplot_firm.pdf", width = 4, height = 5.5)
 print(mastectomy.firm.barplot)
 dev.off()
 
-# Create combined figure
+# Create combined figure  -->  Paper Figure 1
 options(digits = 3)
 gg.mastectomy.firm <- ggtexttable(
   mastectomy.firm_w1_tabular,
@@ -573,7 +653,7 @@ cat("\n=== Window 1 analysis complete ===\n")
 cat("Results saved to results/window_1/ and results/figures/\n")
 
 # =============================================================================
-# 9. WINDOW 2 ANALYSIS (Intervention Phase I)
+# 9. WINDOW 2 ANALYSIS (Intervention Phase I)  -->  Paper Table 3 / Figure 2
 # =============================================================================
 
 cat("\n\n=== WINDOW 2 ANALYSIS (INTERVENTION PHASE I) ===\n")
@@ -629,3 +709,4 @@ cat("\n=== ANALYSIS COMPLETE ===\n")
 cat("All results have been saved to the results/ directory.\n")
 cat("Summary tables: results/window_*/firm_summary.csv\n")
 cat("Plots: results/window_*/*.pdf and results/figures/*.pdf\n")
+
