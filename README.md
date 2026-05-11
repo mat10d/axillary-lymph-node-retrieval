@@ -10,18 +10,23 @@ This repository contains the data analysis code for a published research study e
 
 **Institution:** Obafemi Awolowo University Teaching Hospital, Nigeria
 
-**Publication:** ecancermedicalscience
+**Publication:** ecancermedicalscience (2023), Volume 17
 
-**DOI/URL:** https://ecancer.org/en/journal/article/1609-immediate-lymph-node-extraction-improves-retrieval-rate-following-axillary-lymph-node-dissection-an-effective-approach-to-improving-guideline-concordant-breast-cancer-care-in-nigeria
+**DOI:** [10.3332/ecancer.2023.1609](https://doi.org/10.3332/ecancer.2023.1609)
+
+**URL:** https://ecancer.org/en/journal/article/1609-immediate-lymph-node-extraction-improves-retrieval-rate-following-axillary-lymph-node-dissection-an-effective-approach-to-improving-guideline-concordant-breast-cancer-care-in-nigeria
 
 ## Citation
 
 If you use this code or data, please cite the original publication:
 
 ```
-Olasehinde O, et al. Immediate lymph node extraction improves retrieval rate following
-axillary lymph node dissection: an effective approach to improving guideline concordant
-breast cancer care in Nigeria. ecancermedicalscience. 2023.
+Olasehinde O, Di Bernardo M, Komolafe AO, Omoyiola OZ, Wuraola FO, Betiku O,
+Ogunrinde O, Aderounmu A, Olaofe OO, Adefidipe A, Ewoye E, Mohammed TO, Oyeneye F,
+Adisa AO, Alatise OI, Omoniyi-Esan G. Immediate lymph node extraction improves
+retrieval rate following axillary lymph node dissection: an effective approach to
+improving guideline concordant breast cancer care in Nigeria.
+ecancermedicalscience. 2023;17:1609. doi: 10.3332/ecancer.2023.1609
 ```
 
 ## Research Background
